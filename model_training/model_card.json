@@ -1,0 +1,70 @@
+{
+  "model_name": "roadwatch-yolov8n-baseline",
+  "version": "0.1.0",
+  "status": "TEMPLATE - fill in after training",
+  "owner": "Sanvi (model training and evaluation)",
+  "task": "Object detection of road damage",
+  "architecture": "YOLOv8n (Ultralytics)",
+  "pretrained_weights": "yolov8n.pt (COCO)",
+  "classes": {
+    "0": "D00 - Longitudinal crack",
+    "1": "D10 - Transverse crack",
+    "2": "D20 - Alligator crack",
+    "3": "D40 - Pothole"
+  },
+  "dataset": {
+    "name": "RoadWatch_YOLO_Grouped",
+    "source": "RDD2022 - India subset, prepared by Manasvi (see README.md and dataset_pipeline/)",
+    "config": "dataset_pipeline/data_grouped.yaml",
+    "splits": {
+      "train": 5001,
+      "val": 1429,
+      "test": 714
+    },
+    "notes": "Group-aware split; about 55% of images are negatives (no damage, empty label files)."
+  },
+  "training": {
+    "epochs": 50,
+    "image_size": 640,
+    "batch_size": 16,
+    "seed": 42,
+    "patience": 15,
+    "hardware": "Google Colab, NVIDIA T4",
+    "run_name": "v8n_baseline",
+    "epochs_completed": "<FILL IN>",
+    "best_epoch": "<FILL IN>",
+    "training_time_hours": "<FILL IN>"
+  },
+  "evaluation": {
+    "split": "test",
+    "metrics_file": "reports/<FILL IN>.json",
+    "mAP50": "<FILL IN>",
+    "mAP50_95": "<FILL IN>",
+    "precision": "<FILL IN>",
+    "recall": "<FILL IN>",
+    "per_class_AP50": {
+      "D00": "<FILL IN>",
+      "D10": "<FILL IN>",
+      "D20": "<FILL IN>",
+      "D40": "<FILL IN>"
+    }
+  },
+  "cpu_benchmark": {
+    "hardware": "<FILL IN e.g. CPU model, cores>",
+    "image_size": 640,
+    "ms_per_image_pytorch": "<FILL IN>",
+    "ms_per_image_onnx": "<FILL IN>",
+    "weights_size_mb_pytorch": "<FILL IN>",
+    "weights_size_mb_onnx": "<FILL IN>"
+  },
+  "artifacts": {
+    "best_weights": "Google Drive: MyDrive/RoadWatch/runs/v8n_baseline/weights/best.pt (not committed)",
+    "onnx_export": "<FILL IN path, not committed>"
+  },
+  "intended_use": "<FILL IN e.g. flagging road damage in dashcam images for review by road maintenance teams>",
+  "limitations": [
+    "<FILL IN e.g. trained only on Indian roads from RDD2022; performance elsewhere unknown>",
+    "<FILL IN e.g. weaker on small or faint cracks; check per-class AP>"
+  ],
+  "date": "<FILL IN YYYY-MM-DD>"
+}
