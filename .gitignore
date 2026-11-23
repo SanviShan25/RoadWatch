@@ -16,3 +16,7 @@ venv/
 
 # Environment variables and secrets
 .env
+
+runs/
+*.pt
+*.onnx
