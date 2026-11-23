@@ -8,7 +8,7 @@ This part of the project focuses on preparing and validating the dataset for YOL
 
 The dataset is derived from the **RDD2022 (Road Damage Dataset 2022) – India** subset.
 
-The pipeline converts the original XML annotations into YOLO format, selects the required damage classes, includes negative images, creates training/validation/testing splits, and verifies the final dataset.
+The pipeline converts the original XML annotations into YOLO format, selects the required damage classes, includes negative images, creates training/validation/testing splits, and performs dataset quality checks.
 
 ## 2. Dataset Source
 
@@ -28,12 +28,12 @@ The original training dataset contained:
 
 Four damage classes were selected for this project.
 
-| Class ID | Damage Class             |
-| -------- | ------------------------ |
-| 0        | D00 – Longitudinal Crack |
-| 1        | D10 – Transverse Crack   |
-| 2        | D20 – Alligator Crack    |
-| 3        | D40 – Pothole            |
+| Class ID | Damage Class |
+|---|---|
+| 0 | D00 – Longitudinal Crack |
+| 1 | D10 – Transverse Crack |
+| 2 | D20 – Alligator Crack |
+| 3 | D40 – Pothole |
 
 The selected classes account for 6,831 annotated objects in the original dataset.
 
@@ -91,48 +91,99 @@ The final dataset contains:
 - 7,144 total images
 - 7,144 corresponding label files
 
-### Step 7: Train, Validation and Test Split
+### Step 7: Initial Train, Validation and Test Split
 
-The final dataset was divided into three subsets:
+The original dataset was divided into three subsets:
 
-| Subset     |    Images | Percentage |
-| ---------- | --------: | ---------: |
-| Training   |     5,000 |        70% |
-| Validation |     1,428 |        20% |
-| Testing    |       716 |        10% |
-| **Total**  | **7,144** |   **100%** |
+| Subset | Images | Percentage |
+|---|---:|---:|
+| Training | 5,000 | 70% |
+| Validation | 1,428 | 20% |
+| Testing | 716 | 10% |
+| **Total** | **7,144** | **100%** |
 
 The split was performed with a fixed random seed of 42 for reproducibility. Positive and negative images were split separately.
 
+### Step 8: Duplicate and Near-Duplicate Investigation
+
+An additional investigation was performed to identify potentially similar images across the training, validation and testing subsets.
+
+The following techniques were used:
+
+- **SHA-256 hashing:** Checked for byte-identical images. No exact duplicate groups were found.
+- **Difference Hash (dHash):** Identified visually similar image candidates using Hamming distance.
+- **SSIM:** Compared structural similarity between candidate images.
+- **ORB feature matching:** Compared visual features between image pairs.
+- **RANSAC homography:** Checked geometric consistency between matched image features.
+- **Visual inspection:** High-priority candidate pairs were manually compared using image contact sheets.
+
+The near-duplicate investigation identified 30 candidate pairs with dHash distance of 0 or 1, forming 15 connected candidate groups across different splits.
+
+Four high-priority pairs were selected for further inspection using ORB and RANSAC results. These pairs showed strong visual similarity and were treated as related road-scene candidates.
+
+### Step 9: Group-Aware Dataset Splitting
+
+To prevent the four visually reviewed image pairs from being distributed across different subsets, a separate group-aware splitting script was created.
+
+The script:
+
+- Reads the confirmed image groups from `confirmed_scene_groups.csv`.
+- Keeps images belonging to the same confirmed group together.
+- Separately distributes positive and negative image groups.
+- Assigns the remaining images individually.
+- Preserves all original images and annotation files.
+- Creates a separate dataset without modifying the original dataset.
+
+The resulting grouped dataset contains:
+
+| Subset | Images | Positive Images | Negative Images |
+|---|---:|---:|---:|
+| Training | 5,001 | 2,256 | 2,745 |
+| Validation | 1,429 | 645 | 784 |
+| Testing | 714 | 322 | 392 |
+| **Total** | **7,144** | **3,223** | **3,921** |
+
+All four confirmed groups passed the group-integrity check.
+
+**Note:** This grouping addresses the four visually reviewed candidate pairs. It does not establish that the entire dataset is free from near-duplicate or related-scene leakage. The remaining candidates have not all been manually verified.
+
 ## 5. Final Dataset Structure
 
-The final dataset is organised as follows:
+The project now contains two dataset versions.
+
+### Original dataset
+
+`data/RoadWatch_YOLO_Final/`
+
+### Group-aware dataset
+
+`data/RoadWatch_YOLO_Grouped/`
+
+The grouped dataset is organised as follows:
 
 ```text
-RoadWatch/
-│
-├── data/
-│   └── RoadWatch_YOLO_Final/
-│       ├── images/
-│       │   ├── all/
-│       │   ├── train/
-│       │   ├── val/
-│       │   └── test/
-│       │
-│       └── labels/
-│           ├── all/
-│           ├── train/
-│           ├── val/
-│           └── test/
-│
-└── dataset_pipeline/
-    ├── data.yaml
-    └── scripts/
+RoadWatch_YOLO_Grouped/
+├── images/
+│   ├── all/
+│   ├── train/
+│   ├── val/
+│   └── test/
+└── labels/
+    ├── all/
+    ├── train/
+    ├── val/
+    └── test/
 ```
+
+Both dataset versions are preserved separately.
 
 ## 6. YOLO Configuration
 
-The `data.yaml` file specifies the dataset paths, number of classes, and class names.
+Two YAML configuration files are available.
+
+### Original configuration
+
+`dataset_pipeline/data.yaml`
 
 ```yaml
 path: ../data/RoadWatch_YOLO_Final
@@ -149,39 +200,78 @@ names:
   3: D40
 ```
 
-The paths are relative to the location of `data.yaml`.
+### Group-aware configuration
+
+`dataset_pipeline/data_grouped.yaml`
+
+```yaml
+path: ../data/RoadWatch_YOLO_Grouped
+train: images/train
+val: images/val
+test: images/test
+
+nc: 4
+
+names:
+  0: D00
+  1: D10
+  2: D20
+  3: D40
+```
+
+The paths are relative to the location of their respective YAML files.
+
+The grouped configuration can be used for the model-training stage when the team chooses to use the group-aware dataset.
 
 ## 7. Scripts Used
 
-The following scripts were created as part of the dataset pipeline:
+The following scripts were created as part of the dataset pipeline.
 
-| Script                       | Purpose                                            |
-| ---------------------------- | -------------------------------------------------- |
-| `class_audit.py`             | Analyses the distribution of damage classes        |
+| Script | Purpose |
+|---|---|
+| `class_audit.py` | Analyses the distribution of damage classes |
 | `analyze_excluded_images.py` | Examines images containing excluded damage classes |
-| `validate_dataset.py`        | Validates original dataset files and annotations   |
-| `convert_to_yolo.py`         | Converts XML annotations into YOLO format          |
-| `visualize_annotations.py`   | Visualises bounding boxes on images                |
-| `verify_yolo.py`             | Checks converted YOLO annotations                  |
-| `verify_negative_images.py`  | Checks negative images and their empty labels      |
-| `prepare_final_dataset.py`   | Combines positive and negative images              |
-| `split_final_dataset.py`     | Creates train, validation and test subsets         |
-| `verify_final_dataset.py`    | Performs final dataset validation                  |
+| `validate_dataset.py` | Validates original dataset files and annotations |
+| `convert_to_yolo.py` | Converts XML annotations into YOLO format |
+| `visualize_annotations.py` | Visualises bounding boxes on images |
+| `verify_yolo.py` | Checks converted YOLO annotations |
+| `verify_negative_images.py` | Checks negative images and their empty labels |
+| `prepare_final_dataset.py` | Combines positive and negative images |
+| `split_final_dataset.py` | Creates the original random split |
+| `verify_final_dataset.py` | Performs final dataset validation |
+| `check_duplicate_images.py` | Checks for byte-identical images using SHA-256 |
+| `check_near_duplicates.py` | Finds near-duplicate candidates using dHash |
+| `group_near_duplicates.py` | Groups candidate images based on dHash similarity |
+| `verify_near_duplicate_pairs.py` | Evaluates image-pair similarity using SSIM, ORB and RANSAC |
+| `visualize_image_groups.py` | Creates contact sheets for visual inspection |
+| `inspect_strong_matches.py` | Displays high-priority image-pair comparisons |
+| `create_grouped_split.py` | Creates the separate group-aware dataset |
 
 ## 8. Final Validation Results
 
-The final dataset verification confirmed:
+The grouped dataset was checked for:
 
-- 7,144 images present.
-- 7,144 corresponding label files present.
-- Training, validation and testing image/label counts match.
-- No missing labels.
-- No extra labels.
-- No invalid bounding boxes.
+- 7,144 images in the combined dataset.
+- 7,144 corresponding label files.
+- Matching image and label counts in all subsets.
+- Zero missing labels.
+- Zero extra labels.
+- All four confirmed image groups kept intact.
+- All six train, validation and test image/label directories present.
+- Valid YAML configuration and dataset paths.
 - 6,831 total annotated damage objects.
-- Zero validation errors.
 
-All images were found to have dimensions of 720 × 720 pixels during the earlier image-dimension analysis.
+### Class-wise object distribution in the grouped dataset
+
+| Damage Class | Training | Validation | Testing | Total |
+|---|---:|---:|---:|---:|
+| D00 | 1,092 | 319 | 144 | 1,555 |
+| D10 | 47 | 13 | 8 | 68 |
+| D20 | 1,411 | 399 | 211 | 2,021 |
+| D40 | 2,260 | 609 | 318 | 3,187 |
+| **Total** | **4,810** | **1,340** | **681** | **6,831** |
+
+The class-wise totals match the original selected-class annotation counts.
 
 ## 9. Important Dataset Limitations
 
@@ -191,17 +281,21 @@ All images were found to have dimensions of 720 × 720 pixels during the earlier
 
 3. **Test split:** The test subset was created from the original labelled training data. The official RDD2022 test images were not used because corresponding annotations were unavailable in the dataset used for this pipeline.
 
-4. **Duplicate checking:** Cross-split duplicate and near-duplicate image checking has not yet been completed.
+4. **Near-duplicate investigation:** Four high-priority image pairs were visually reviewed and kept within their respective splits. Other near-duplicate candidates may remain, so complete elimination of related-scene leakage has not been established.
+
+5. **Test-set limitations:** The D10 class has only 8 annotated objects in the grouped test subset. Therefore, its evaluation metrics may be unstable.
 
 ## 10. Handover to Model Training
 
-The prepared dataset is ready to be used for YOLO model training after the remaining dataset quality checks.
+Two prepared dataset configurations are available for the YOLO model-training stage.
 
-- **Dataset directory:** `data/RoadWatch_YOLO_Final/`
-- **YOLO configuration:** `dataset_pipeline/data.yaml`
+- **Original dataset:** `data/RoadWatch_YOLO_Final/`
+- **Original configuration:** `dataset_pipeline/data.yaml`
+- **Group-aware dataset:** `data/RoadWatch_YOLO_Grouped/`
+- **Group-aware configuration:** `dataset_pipeline/data_grouped.yaml`
 
-The model-training stage can use the YAML configuration to locate the training, validation and test datasets.
+The team can select the appropriate YAML configuration for YOLO training and evaluation.
 
 ---
 
-**Dataset preparation and preprocessing completed as part of the RoadWatch project.**
+**Dataset preparation, preprocessing, validation and group-aware splitting completed as part of the RoadWatch project.**
