@@ -1,0 +1,12 @@
+﻿path: ../data/RoadWatch_YOLO_Final
+train: images/train
+val: images/val
+test: images/test
+
+nc: 4
+
+names:
+  0: D00
+  1: D10
+  2: D20
+  3: D40
