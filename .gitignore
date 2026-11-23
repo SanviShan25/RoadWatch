@@ -1,0 +1,22 @@
+
+# Original dataset and generated datasets
+/data/
+
+# Model weights and training outputs
+*.pt
+runs/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables and secrets
+.env
+
+runs/
+*.pt
+*.onnx

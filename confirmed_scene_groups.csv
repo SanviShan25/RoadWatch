@@ -1,0 +1,9 @@
+﻿group_id,split,image
+G1,train,India_008870.jpg
+G1,val,India_002318.jpg
+G2,train,India_006129.jpg
+G2,val,India_007141.jpg
+G3,train,India_009205.jpg
+G3,test,India_008224.jpg
+G4,train,India_000483.jpg
+G4,val,India_000991.jpg
