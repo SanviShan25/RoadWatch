@@ -1,0 +1,40 @@
+{
+  "weights": "/content/drive/MyDrive/RoadWatch/runs/v8s_640_e100/weights/best.pt",
+  "split": "test",
+  "mAP50": 0.3807,
+  "mAP50_95": 0.1652,
+  "precision": 0.5641,
+  "recall": 0.3655,
+  "per_class_AP50": {
+    "D00": 0.3025,
+    "D10": 0.149,
+    "D20": 0.6636,
+    "D40": 0.4076
+  },
+  "per_class": {
+    "D00": {
+      "AP50": 0.3025,
+      "AP50_95": 0.1246,
+      "precision": 0.4642,
+      "recall": 0.2917
+    },
+    "D10": {
+      "AP50": 0.149,
+      "AP50_95": 0.1048,
+      "precision": 0.6205,
+      "recall": 0.125
+    },
+    "D20": {
+      "AP50": 0.6636,
+      "AP50_95": 0.2791,
+      "precision": 0.6776,
+      "recall": 0.6398
+    },
+    "D40": {
+      "AP50": 0.4076,
+      "AP50_95": 0.1522,
+      "precision": 0.494,
+      "recall": 0.4057
+    }
+  }
+}
