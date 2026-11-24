@@ -1,11 +1,13 @@
 {
-  "model_name": "roadwatch-yolov8n-baseline",
-  "version": "0.1.0",
-  "status": "TEMPLATE - fill in after training",
+  "model_name": "roadwatch-v1-yolov8s",
+  "version": "1.0.0",
+  "status": "Evaluated - selected for API handover (see reports/evaluation_report.md)",
   "owner": "Sanvi (model training and evaluation)",
   "task": "Object detection of road damage",
-  "architecture": "YOLOv8n (Ultralytics)",
-  "pretrained_weights": "yolov8n.pt (COCO)",
+  "architecture": "YOLOv8s (Ultralytics)",
+  "parameters_fused": 11127132,
+  "gflops": 28.4,
+  "pretrained_weights": "yolov8s.pt (COCO)",
   "classes": {
     "0": "D00 - Longitudinal crack",
     "1": "D10 - Transverse crack",
@@ -21,50 +23,122 @@
       "val": 1429,
       "test": 714
     },
-    "notes": "Group-aware split; about 55% of images are negatives (no damage, empty label files)."
+    "test_boxes_per_class": {
+      "D00": 144,
+      "D10": 8,
+      "D20": 211,
+      "D40": 318
+    },
+    "notes": "Group-aware split; 3,921 of 7,144 images are negatives (no damage, empty label files)."
   },
   "training": {
-    "epochs": 50,
+    "notebook": "notebooks/02_finetune.ipynb",
+    "run_name": "v8s_640_e100",
+    "epochs": 100,
     "image_size": 640,
     "batch_size": 16,
     "seed": 42,
-    "patience": 15,
-    "hardware": "Google Colab, NVIDIA T4",
-    "run_name": "v8n_baseline",
-    "epochs_completed": "<FILL IN>",
-    "best_epoch": "<FILL IN>",
-    "training_time_hours": "<FILL IN>"
+    "patience": 20,
+    "cos_lr": true,
+    "augmentation_overrides": {
+      "hsv_v": 0.5,
+      "fliplr": 0.5,
+      "degrees": 5,
+      "close_mosaic": 10
+    },
+    "hardware": "Google Colab, NVIDIA Tesla T4",
+    "ultralytics_version": "8.4.216",
+    "epochs_completed": 100,
+    "early_stopped": false,
+    "best_epoch": "NOT RECORDED - not printed in the notebook output and results.csv is not in the repo",
+    "training_time_hours": 3.02
+  },
+  "validation": {
+    "split": "val",
+    "source": "final validation of best.pt in the training output of 02_finetune.ipynb",
+    "mAP50": 0.354,
+    "mAP50_95": 0.151,
+    "precision": 0.522,
+    "recall": 0.365,
+    "per_class_AP50": {
+      "D00": 0.319,
+      "D10": 0.122,
+      "D20": 0.595,
+      "D40": 0.379
+    }
   },
   "evaluation": {
     "split": "test",
-    "metrics_file": "reports/<FILL IN>.json",
-    "mAP50": "<FILL IN>",
-    "mAP50_95": "<FILL IN>",
-    "precision": "<FILL IN>",
-    "recall": "<FILL IN>",
+    "metrics_file": "reports/v8s_640_e100_test_metrics.json",
+    "mAP50": 0.3807,
+    "mAP50_95": 0.1652,
+    "precision": 0.5641,
+    "recall": 0.3655,
     "per_class_AP50": {
-      "D00": "<FILL IN>",
-      "D10": "<FILL IN>",
-      "D20": "<FILL IN>",
-      "D40": "<FILL IN>"
+      "D00": 0.3025,
+      "D10": 0.149,
+      "D20": 0.6636,
+      "D40": 0.4076
+    },
+    "per_class_AP50_95": {
+      "D00": 0.1246,
+      "D10": 0.1048,
+      "D20": 0.2791,
+      "D40": 0.1522
+    },
+    "missed_detections": {
+      "method": "conf >= 0.25, same class, IoU >= 0.5 (02_finetune.ipynb section 10)",
+      "missed_of_total": {
+        "D00": "93 / 144",
+        "D10": "7 / 8",
+        "D20": "72 / 211",
+        "D40": "174 / 318"
+      }
+    },
+    "baseline_comparison": {
+      "baseline_run": "v8n_baseline (YOLOv8n, 50 epochs, 1.178 h)",
+      "baseline_metrics_file": "reports/baseline_v8n_test_metrics.json",
+      "baseline_test_mAP50": 0.3415,
+      "baseline_test_mAP50_95": 0.1476,
+      "test_mAP50_gain": 0.0392,
+      "val_mAP50_gain": 0.01,
+      "note": "Validation gain is much smaller than test gain; differences of a few hundredths are within noise."
     }
   },
   "cpu_benchmark": {
-    "hardware": "<FILL IN e.g. CPU model, cores>",
+    "benchmark_file": "reports/v8s_640_e100_cpu_benchmark.json",
+    "hardware": "Google Colab CPU, Intel Xeon @ 2.20GHz, 2 logical cores, 1 PyTorch thread",
     "image_size": 640,
-    "ms_per_image_pytorch": "<FILL IN>",
-    "ms_per_image_onnx": "<FILL IN>",
-    "weights_size_mb_pytorch": "<FILL IN>",
-    "weights_size_mb_onnx": "<FILL IN>"
+    "images_timed": 50,
+    "ms_per_image_pytorch": 552.4,
+    "ms_per_image_pytorch_median": 493.4,
+    "ms_per_image_onnx": 490.6,
+    "ms_per_image_onnx_median": 439.8,
+    "weights_size_mb_pytorch": 21.48,
+    "weights_size_mb_onnx": 42.68,
+    "target_server_benchmark": "NOT MEASURED YET - re-run scripts/benchmark_cpu.py on the API server"
+  },
+  "inference": {
+    "image_size": 640,
+    "class_order": ["D00", "D10", "D20", "D40"],
+    "suggested_conf": 0.25,
+    "conf_note": "Lower for higher recall; threshold not tuned yet.",
+    "ultralytics_version": "8.4.x"
   },
   "artifacts": {
-    "best_weights": "Google Drive: MyDrive/RoadWatch/runs/v8n_baseline/weights/best.pt (not committed)",
-    "onnx_export": "<FILL IN path, not committed>"
+    "release_weights": "roadwatch_v1_v8s_640_e100.pt (copy of best.pt, exported by 02_finetune.ipynb section 12; not committed)",
+    "best_weights": "Google Drive: MyDrive/RoadWatch/runs/v8s_640_e100/weights/best.pt (not committed)",
+    "onnx_export": "Google Drive: MyDrive/RoadWatch/runs/v8s_640_e100/weights/best.onnx (not committed)"
   },
-  "intended_use": "<FILL IN e.g. flagging road damage in dashcam images for review by road maintenance teams>",
+  "intended_use": "Detecting and classifying road damage (longitudinal, transverse and alligator cracks, potholes) in road images. Exact deployment context: TO CONFIRM with the team.",
   "limitations": [
-    "<FILL IN e.g. trained only on Indian roads from RDD2022; performance elsewhere unknown>",
-    "<FILL IN e.g. weaker on small or faint cracks; check per-class AP>"
+    "D10 has only 68 boxes in the whole dataset (8 in test); D10 metrics are unreliable.",
+    "Other RDD2022 damage types in the images were not labelled and act as background.",
+    "Test split comes from the original RDD2022 India training data; performance on other regions or cameras is unknown.",
+    "Only four near-duplicate pairs were controlled across splits; some leakage may remain.",
+    "About half of ground-truth boxes are missed at conf 0.25 / IoU 0.5; small, faint and thin damage is missed most.",
+    "Box granularity differs from the annotations (one large box vs several small ones), which lowers IoU-based scores.",
+    "Single training run per model (seed 42)."
   ],
-  "date": "<FILL IN YYYY-MM-DD>"
+  "date": "2026-11-24"
 }
