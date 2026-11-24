@@ -1,0 +1,22 @@
+{
+  "run": "v8s_640_e100",
+  "environment": "colab",
+  "cpu": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+  "cpu_logical_cores": 2,
+  "torch_threads": 1,
+  "imgsz": 640,
+  "images_timed": 50,
+  "warmup_images": 5,
+  "pytorch": {
+    "file": "/content/drive/MyDrive/RoadWatch/runs/v8s_640_e100/weights/best.pt",
+    "size_mb": 21.48,
+    "ms_per_image_mean": 552.4,
+    "ms_per_image_median": 493.4
+  },
+  "onnx": {
+    "file": "/content/drive/MyDrive/RoadWatch/runs/v8s_640_e100/weights/best.onnx",
+    "size_mb": 42.68,
+    "ms_per_image_mean": 490.6,
+    "ms_per_image_median": 439.8
+  }
+}
